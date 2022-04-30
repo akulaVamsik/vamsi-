@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="e7c488a4-a192-42c6-987f-41f6bb3d14df" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web_Service_Consumer_Config" doc:id="1e74ba05-0742-45ec-9cbd-c3393db46ebf" >
+		<wsc:connection wsdlLocation="http://www.dneonline.com/calculator.asmx?wsdl" service="Calculator" port="CalculatorSoap" address="http://www.dneonline.com/calculator.asmx" >
+			<wsc:web-service-security actor="http://schemas.xmlsoap.org/soap/actor/next" />
+		</wsc:connection>
+	</wsc:config>
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="ea7d5bcb-44d8-4823-b8dd-1c24977f13fd" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<wsc:config name="Web_Service_Consumer_Config1" doc:name="Web Service Consumer Config" doc:id="b8c90556-5785-41bf-9eb2-0bc0cd6be3f8" >
+		<wsc:connection wsdlLocation="http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso?WSDL" service="CountryInfoService" port="CountryInfoServiceSoap" address="http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso" />
+	</wsc:config>
+	<flow name="soapFlow" doc:id="a26785f1-c817-40dd-8e18-dec0711d0c77" >
+		<http:listener doc:name="Listener" doc:id="53e1cb90-ca26-4a5a-be5a-b0b5721bc332" config-ref="HTTP_Listener_config1" path="soap"/>\
+		<set-variable value="#[attributes.queryParams.string]" doc:name="Set Variable" doc:id="5e28bf41-c62e-4e26-a88a-6645d6678464" variableName="string"/>
+		<ee:transform doc:name="Transform Message" doc:id="e3a53574-01dc-485d-88b5-3656af2c140f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://www.oorsprong.org/websamples.countryinfo
+---
+{
+	ns0#CurrencyName: {
+		ns0#sCurrencyISOCode: vars.string as String
+	},
+	ns0#CountryName: ({
+	}default "") ++ vars.string
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="CurrencyName" doc:name="Consume" doc:id="e17af407-8321-41a3-93df-afa12efc3a30" config-ref="Web_Service_Consumer_Config1"/>
+		<logger level="INFO" doc:name="Logger" doc:id="7b839788-4045-433b-8dc0-076bb9b10a88" message="#[payload]"/>
+	</flow>
+</mule>
